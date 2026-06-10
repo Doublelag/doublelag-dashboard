@@ -1,0 +1,18 @@
+{
+  "name": "Doublelag — Dashboard de Ingresos",
+  "short_name": "Ingresos",
+  "description": "Dashboard de ingresos mensuales: YouTube, afiliados y más. Datos locales, con proyecciones y resumen fiscal.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#0f1117",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

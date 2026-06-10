@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Dashboard de ingresos mensuales: YouTube, afiliados y más. Datos locales, exportables, con proyecciones y resumen fiscal.">
+<meta name="theme-color" content="#0f1117">
 <title>Doublelag — Dashboard de Ingresos</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -16,12 +18,23 @@
     --text3: #5a5f7a;
     --accent: #6c63ff;
     --accent2: #ff6b6b;
-    --yt: #ff0000;
     --dh: #f97316;
     --green: #22c55e;
     --border: rgba(255,255,255,0.07);
+    --shadow: rgba(0,0,0,0.4);
     --radius: 14px;
   }
+  [data-theme="light"] {
+    --bg: #f4f5fa;
+    --bg2: #ffffff;
+    --bg3: #e9ebf5;
+    --text: #1a1d2e;
+    --text2: #5a6075;
+    --text3: #9aa0b5;
+    --border: rgba(20,25,60,0.1);
+    --shadow: rgba(60,70,120,0.15);
+  }
+  html { scroll-behavior: smooth; }
   body {
     background: var(--bg);
     color: var(--text);
@@ -30,22 +43,83 @@
     padding: 32px 24px;
     max-width: 1100px;
     margin: 0 auto;
+    transition: background 0.25s, color 0.25s;
   }
   h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-  .subtitle { color: var(--text2); font-size: 15px; margin-bottom: 32px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .subtitle { color: var(--text2); font-size: 15px; }
+  .topbar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn:focus-visible, .tab:focus-visible, .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: #5a51f0; color: white; }
+  .dropdown { position: relative; }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 30px var(--shadow);
+    min-width: 230px;
+    z-index: 50;
+    overflow: hidden;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .dropdown-menu button:hover { background: var(--bg3); }
+  .dropdown-menu .sep { border-top: 1px solid var(--border); }
+  .dropdown-menu .danger { color: var(--accent2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 20px; }
   .card {
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 20px 22px;
+    padding: 18px 20px;
   }
-  .card-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 8px; }
-  .card-value { font-size: 30px; font-weight: 700; line-height: 1; }
-  .card-sub { font-size: 13px; color: var(--text2); margin-top: 6px; }
-  .card-trend { font-size: 13px; margin-top: 6px; }
-  .up { color: var(--green); }
-  .down { color: var(--accent2); }
+  .card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 8px; }
+  .card-value { font-size: 27px; font-weight: 700; line-height: 1; }
+  .card-sub { font-size: 12.5px; color: var(--text2); margin-top: 6px; }
+  .goal-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 22px;
+  }
+  .goal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .goal-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .progress-track { background: var(--bg3); border-radius: 20px; height: 14px; overflow: hidden; position: relative; }
+  .progress-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), #8f88ff); transition: width 0.5s; }
+  .progress-fill.green { background: linear-gradient(90deg, #16a34a, #34d399); }
+  .progress-proj { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--dh); }
+  .goal-sub { font-size: 12px; color: var(--text2); margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
   .chart-card {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -55,11 +129,12 @@
   }
   .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
   .chart-title { font-size: 17px; font-weight: 600; }
+  .chart-note { font-size: 13px; color: var(--text2); }
   .legend { display: flex; gap: 20px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text2); }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
   .chart-wrap { position: relative; width: 100%; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
   .tab {
     padding: 7px 18px;
     border-radius: 8px;
@@ -72,6 +147,13 @@
     transition: all 0.15s;
   }
   .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .tab-spacer { flex: 1; }
+  .mini-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mini-toggle button {
+    padding: 6px 12px; font-size: 12px; border: none; background: transparent;
+    color: var(--text2); cursor: pointer;
+  }
+  .mini-toggle button.active { background: var(--bg3); color: var(--text); }
   .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
   .insight {
     background: var(--bg2);
@@ -81,19 +163,40 @@
   }
   .insight-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .insight-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .insight-scroll { max-height: 420px; overflow-y: auto; }
+  .insight-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 8px; }
   .insight-row:last-child { border-bottom: none; }
   .insight-row .val { font-weight: 600; }
+  .row-actions { display: flex; gap: 4px; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer; font-size: 13px;
+    color: var(--text3); padding: 2px 5px; border-radius: 5px;
+  }
+  .icon-btn:hover { background: var(--bg3); color: var(--text); }
   .badge {
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 20px;
     font-weight: 500;
+    white-space: nowrap;
   }
   .badge-green { background: rgba(34,197,94,0.15); color: var(--green); }
   .badge-red { background: rgba(255,107,107,0.15); color: var(--accent2); }
   .badge-orange { background: rgba(249,115,22,0.15); color: var(--dh); }
-  .footer { text-align: center; color: var(--text3); font-size: 12px; margin-top: 32px; }
+  .badge-purple { background: rgba(108,99,255,0.18); color: #a09aff; }
+  [data-theme="light"] .badge-purple { color: #5a51f0; }
+  .fiscal-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .fiscal-table th {
+    text-align: right; padding: 8px 10px; color: var(--text3);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+  }
+  .fiscal-table th:first-child, .fiscal-table td:first-child { text-align: left; }
+  .fiscal-table td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  .fiscal-table tr:last-child td { border-bottom: none; }
+  .fiscal-table .year-row td { color: var(--text2); font-weight: 600; background: var(--bg3); }
+  .footer { text-align: center; color: var(--text3); font-size: 12px; margin-top: 32px; line-height: 1.7; }
+  .footer a { color: var(--text2); }
   .viral-banner {
     background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,107,107,0.1));
     border: 1px solid rgba(108,99,255,0.3);
@@ -107,53 +210,253 @@
   .viral-icon { font-size: 36px; }
   .viral-text h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
   .viral-text p { font-size: 13px; color: var(--text2); }
+  /* Modales */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 18px; }
+  .modal .hint { font-size: 12px; color: var(--text3); margin-bottom: 14px; line-height: 1.5; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field input[type="color"] { padding: 4px; height: 40px; cursor: pointer; }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .source-list-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .source-list-row:last-child { border-bottom: none; }
+  .source-list-row input[type="text"] {
+    flex: 1; padding: 7px 10px; border-radius: 7px;
+    border: 1px solid transparent; background: transparent; color: var(--text); font-size: 14px;
+  }
+  .source-list-row input[type="text"]:hover, .source-list-row input[type="text"]:focus { border-color: var(--border); background: var(--bg); outline: none; }
+  .source-list-row input[type="color"] { width: 32px; height: 32px; padding: 2px; border: none; background: none; cursor: pointer; border-radius: 6px; }
+  /* Snackbar */
+  .snackbar {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translate(-50%, 120px);
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex; align-items: center; gap: 16px;
+    font-size: 14px;
+    box-shadow: 0 8px 30px var(--shadow);
+    transition: transform 0.3s;
+    z-index: 200;
+  }
+  .snackbar.show { transform: translate(-50%, 0); }
+  .snackbar button { background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer; font-size: 14px; }
+  [data-theme="light"] .snackbar button { color: #5a51f0; }
+  .nota-icon { cursor: help; font-size: 12px; }
   @media (max-width: 600px) {
-    body { padding: 20px 16px; }
-    .card-value { font-size: 24px; }
+    body { padding: 20px 14px; }
+    .card-value { font-size: 22px; }
+    .chart-card { padding: 16px; }
+    .fiscal-table { font-size: 12px; }
+    .fiscal-table th, .fiscal-table td { padding: 7px 6px; }
+  }
+  @media print {
+    .toolbar, .tabs, .row-actions, .icon-btn { display: none !important; }
+    body { background: white; color: black; }
+    .card, .chart-card, .insight, .goal-card { border-color: #ccc; break-inside: avoid; }
   }
 </style>
 </head>
 <body>
 
-<h1>💰 Doublelag — Ingresos</h1>
-<p class="subtitle">Dashboard actualizado a junio 2026 · YouTube + Dathost</p>
+<div class="topbar">
+  <div>
+    <h1>💰 Doublelag — Ingresos</h1>
+    <p class="subtitle" id="subtitle"></p>
+  </div>
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openMonthModal()">＋ Añadir mes</button>
+    <button class="btn" onclick="openSourcesModal()">Fuentes</button>
+    <button class="btn" onclick="openSettingsModal()" aria-label="Ajustes">⚙ Ajustes</button>
+    <div class="dropdown">
+      <button class="btn" id="dataMenuBtn" aria-haspopup="true" aria-expanded="false" onclick="toggleDataMenu(event)">Datos ▾</button>
+      <div class="dropdown-menu" id="dataMenu" role="menu">
+        <button onclick="exportCSV()">⬇ Exportar CSV (Excel)</button>
+        <button onclick="exportJSON()">⬇ Exportar backup JSON</button>
+        <button class="sep" onclick="pickFile('importFile')">⬆ Importar backup JSON</button>
+        <button onclick="pickFile('importYtFile')">⬆ Importar CSV diario de YouTube</button>
+        <button class="sep danger" onclick="resetData()">↺ Restaurar datos originales</button>
+      </div>
+    </div>
+    <button class="btn" id="themeBtn" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    <input type="file" id="importYtFile" accept=".csv,.txt" style="display:none" onchange="importYtCSV(event)">
+  </div>
+</div>
 
 <div class="grid" id="metricCards"></div>
 
-<div class="viral-banner" id="viralBanner"></div>
+<div class="goal-card" id="goalCard"></div>
 
-<div class="chart-card">
-  <div class="chart-header">
-    <span class="chart-title">Ingresos mensuales combinados</span>
-    <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:#ff0000"></span>YouTube</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span>Dathost</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#6c63ff; width:20px; height:3px; border-radius:2px"></span>Media móvil 3m</span>
-    </div>
-  </div>
-  <div class="chart-wrap" style="height: 320px;">
-    <canvas id="mainChart" role="img" aria-label="Ingresos mensuales de YouTube y Dathost de agosto 2025 a mayo 2026"></canvas>
+<div class="viral-banner" id="viralBanner" style="display:none"></div>
+
+<div class="tabs" id="periodTabs">
+  <button class="tab" data-period="6">6 meses</button>
+  <button class="tab active" data-period="12">12 meses</button>
+  <button class="tab" data-period="0">Todo</button>
+  <span class="tab-spacer"></span>
+  <div class="mini-toggle" role="group" aria-label="Modo del gráfico">
+    <button id="modeAbs" class="active" onclick="setChartMode('abs')">€</button>
+    <button id="modePct" onclick="setChartMode('pct')">%</button>
   </div>
 </div>
 
 <div class="chart-card">
   <div class="chart-header">
-    <span class="chart-title">Tendencia de crecimiento</span>
-    <span style="font-size:13px; color:var(--text2)">Total ingresos · línea de tendencia</span>
+    <span class="chart-title" id="mainChartTitle">Ingresos mensuales combinados</span>
+    <div class="legend" id="mainLegend"></div>
+  </div>
+  <div class="chart-wrap" style="height: 320px;">
+    <canvas id="mainChart" role="img" aria-label="Ingresos mensuales por fuente"></canvas>
+  </div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Tendencia y previsión</span>
+    <span class="chart-note">naranja = mejor mes · ◌ = proyección mes actual · discontinua = previsión 3 meses</span>
   </div>
   <div class="chart-wrap" style="height: 240px;">
-    <canvas id="trendChart" role="img" aria-label="Tendencia de crecimiento total de ingresos"></canvas>
+    <canvas id="trendChart" role="img" aria-label="Tendencia de ingresos con previsión a 3 meses"></canvas>
+  </div>
+</div>
+
+<div class="chart-card" id="dailyCard" style="display:none">
+  <div class="chart-header">
+    <span class="chart-title">Detalle diario (últimos 90 días)</span>
+    <span class="chart-note" id="dailyNote"></span>
+  </div>
+  <div class="chart-wrap" style="height: 220px;">
+    <canvas id="dailyChart" role="img" aria-label="Ingresos diarios de los últimos 90 días"></canvas>
+  </div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Resumen fiscal por trimestres</span>
+    <span class="chart-note" id="fiscalNote"></span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="fiscal-table" id="fiscalTable"></table>
   </div>
 </div>
 
 <div class="insight-grid">
-  <div class="insight" id="monthlyBreakdown"></div>
+  <div class="insight">
+    <div class="insight-title"><span class="dot" style="background:var(--accent)"></span>Desglose mensual <span style="color:var(--text3);font-weight:400;font-size:12px">(más reciente arriba)</span></div>
+    <div class="insight-scroll" id="monthlyBreakdown"></div>
+  </div>
   <div class="insight" id="sourceBreakdown"></div>
 </div>
 
-<p class="footer">Datos: YouTube Studio export · Dathost Payments · Actualizado manualmente</p>
+<p class="footer">
+  Datos guardados localmente en tu navegador · Exporta el backup JSON de vez en cuando<br>
+  <a href="https://github.com/Doublelag/doublelag-dashboard" target="_blank" rel="noopener">doublelag-dashboard</a> · v3.0
+</p>
+
+<!-- Modal añadir/editar mes -->
+<div class="modal-overlay" id="monthModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h2 id="monthModalTitle">Añadir mes</h2>
+    <div class="field">
+      <label for="mInput">Mes</label>
+      <input type="month" id="mInput">
+    </div>
+    <div id="sourceFields"></div>
+    <div class="field">
+      <label for="mGastos">Gastos deducibles del mes (€)</label>
+      <input type="number" id="mGastos" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="mNota">Nota (opcional)</label>
+      <textarea id="mNota" placeholder="Ej: vídeo viral el día 21, factura InVideo 25€…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('monthModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMonth()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal fuentes -->
+<div class="modal-overlay" id="sourcesModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h2>Fuentes de ingresos</h2>
+    <p class="hint">Haz clic en el nombre o el color para editarlos directamente.</p>
+    <div id="sourcesList" style="margin-bottom:18px"></div>
+    <div class="field"><label for="newSourceName">Nueva fuente</label><input type="text" id="newSourceName" placeholder="Ej: Patreon, Twitch, Cliente X…"></div>
+    <div class="field"><label for="newSourceColor">Color</label><input type="color" id="newSourceColor" value="#22c55e"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('sourcesModal')">Cerrar</button>
+      <button class="btn btn-primary" onclick="addSource()">Añadir fuente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ajustes -->
+<div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h2>⚙ Ajustes</h2>
+    <div class="field">
+      <label for="sGoal">Objetivo mensual (€)</label>
+      <input type="number" id="sGoal" min="0" step="50">
+    </div>
+    <div class="field">
+      <label for="sYearGoal">Objetivo anual (€)</label>
+      <input type="number" id="sYearGoal" min="0" step="500">
+    </div>
+    <div class="field">
+      <label for="sTaxRate">Hucha fiscal sugerida (%)</label>
+      <input type="number" id="sTaxRate" min="0" max="60" step="1">
+    </div>
+    <p class="hint">La hucha fiscal es solo un apartado orientativo sobre el neto (ingresos − gastos) para cubrir IRPF / cuota de autónomos. No es asesoramiento fiscal.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('settingsModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar" role="status"></div>
 
 <script>
+// ============================================================
+// DATOS SEMILLA (histórico real: YouTube Studio + Dathost)
+// Solo se usan la primera vez; después todo vive en localStorage.
+// ============================================================
 const ytDaily = {
   "2025-08-07":0.207,"2025-08-08":2.039,"2025-08-09":0.844,"2025-08-10":0.578,"2025-08-11":0.536,"2025-08-12":0.629,"2025-08-13":0.842,"2025-08-14":1.22,"2025-08-15":0.742,"2025-08-16":1.551,"2025-08-17":1.153,"2025-08-18":1.455,"2025-08-19":0.745,"2025-08-20":0.778,"2025-08-21":0.912,"2025-08-22":0.939,"2025-08-23":0.728,"2025-08-24":1.037,"2025-08-25":0.566,"2025-08-26":0.426,"2025-08-27":0.433,"2025-08-28":0.847,"2025-08-29":1.098,"2025-08-30":0.634,"2025-08-31":0.665,
   "2025-09-01":0.545,"2025-09-02":0.747,"2025-09-03":6.278,"2025-09-04":1.204,"2025-09-05":0.853,"2025-09-06":0.465,"2025-09-07":0.619,"2025-09-08":1.993,"2025-09-09":0.822,"2025-09-10":2.187,"2025-09-11":1.445,"2025-09-12":0.911,"2025-09-13":1.249,"2025-09-14":0.986,"2025-09-15":1.442,"2025-09-16":1.016,"2025-09-17":0.827,"2025-09-18":0.577,"2025-09-19":0.669,"2025-09-20":0.741,"2025-09-21":1.295,"2025-09-22":1.169,"2025-09-23":2.964,"2025-09-24":2.174,"2025-09-25":1.41,"2025-09-26":2.296,"2025-09-27":2.313,"2025-09-28":1.636,"2025-09-29":0.898,"2025-09-30":0.619,
@@ -167,262 +470,941 @@ const ytDaily = {
   "2026-05-01":64.056,"2026-05-02":81.668,"2026-05-03":73.312,"2026-05-04":49.558,"2026-05-05":24.244,"2026-05-06":45.229,"2026-05-07":25.37,"2026-05-08":16.645,"2026-05-09":25.002,"2026-05-10":31.156,"2026-05-11":19.792,"2026-05-12":16.215,"2026-05-13":9.596,"2026-05-14":13.536,"2026-05-15":9.152,"2026-05-16":13.949,"2026-05-17":27.141,"2026-05-18":17.962,"2026-05-19":37.313,"2026-05-20":38.892,"2026-05-21":27.396,"2026-05-22":52.075,"2026-05-23":52.402,"2026-05-24":44.047,"2026-05-25":34.335,"2026-05-26":13.036,"2026-05-27":19.277,"2026-05-28":22.741,"2026-05-29":25.934,"2026-05-30":37.458,"2026-05-31":29.844,
   "2026-06-01":15.679,"2026-06-02":14.263,"2026-06-03":20.447,"2026-06-04":13.332,"2026-06-05":9.826,"2026-06-06":12.352,"2026-06-07":8.397
 };
+// Pagos Dathost asignados al mes en que se ganaron
+const dathostMonthly = { "2025-11":950, "2025-12":2910, "2026-01":2360, "2026-02":1120, "2026-03":1130, "2026-04":850, "2026-05":1020 };
 
-// Dathost payouts asignados al mes que se ganaron (pago del mes siguiente)
-const dathostMonthly = {
-  "2025-11": 950,
-  "2025-12": 2910,
-  "2026-01": 2360,
-  "2026-02": 1120,
-  "2026-03": 1130,
-  "2026-04": 850,
-  "2026-05": 1020
-};
-
-// Agregar YouTube por mes
-const ytMonthly = {};
-for (const [date, val] of Object.entries(ytDaily)) {
-  const key = date.slice(0,7);
-  ytMonthly[key] = (ytMonthly[key] || 0) + val;
+function buildSeed() {
+  const months = {};
+  for (const [date, val] of Object.entries(ytDaily)) {
+    const key = date.slice(0, 7);
+    if (!months[key]) months[key] = { yt: 0, dh: 0, gastos: 0 };
+    months[key].yt = +(months[key].yt + val).toFixed(2);
+  }
+  for (const [key, val] of Object.entries(dathostMonthly)) {
+    if (!months[key]) months[key] = { yt: 0, dh: 0, gastos: 0 };
+    months[key].dh = val;
+  }
+  return {
+    version: 3,
+    goal: 1500,
+    yearGoal: 18000,
+    taxRate: 20,
+    theme: 'dark',
+    sources: [
+      { id: 'yt', name: 'YouTube AdSense', color: '#ff0000' },
+      { id: 'dh', name: 'Dathost Affiliate', color: '#f97316' }
+    ],
+    months,
+    daily: { ...ytDaily }
+  };
 }
 
-// Meses ordenados (excluir jun parcial del gráfico principal)
-const allMonths = ["2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05"];
-const labels = allMonths.map(m => {
-  const [y, mo] = m.split('-');
-  return ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1] + ' ' + y.slice(2);
-});
+// ============================================================
+// ESTADO Y MIGRACIÓN
+// ============================================================
+const STORAGE_KEY = 'doublelag_income_v3';
+const OLD_KEY = 'doublelag_income_v2';
 
-const ytData = allMonths.map(m => parseFloat((ytMonthly[m] || 0).toFixed(2)));
-const dhData = allMonths.map(m => parseFloat((dathostMonthly[m] || 0).toFixed(2)));
-const totalData = allMonths.map((m, i) => parseFloat((ytData[i] + dhData[i]).toFixed(2)));
+function migrate(d) {
+  d.version = 3;
+  if (d.yearGoal === undefined) d.yearGoal = (d.goal || 1500) * 12;
+  if (d.taxRate === undefined) d.taxRate = 20;
+  if (!d.theme) d.theme = 'dark';
+  if (!d.daily) d.daily = { ...ytDaily };
+  return d;
+}
 
-// Media móvil 3 meses
-const movingAvg = totalData.map((v, i) => {
-  if (i < 2) return null;
-  return parseFloat(((totalData[i-2] + totalData[i-1] + totalData[i]) / 3).toFixed(2));
-});
+function loadData() {
+  try {
+    const v3 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (v3 && v3.months && v3.sources) return v3;
+  } catch (e) {}
+  // migración desde v2 conservando los datos del usuario
+  try {
+    const v2 = JSON.parse(localStorage.getItem(OLD_KEY));
+    if (v2 && v2.months && v2.sources) return v2;
+  } catch (e) {}
+  return buildSeed();
+}
 
-// Métricas
-const totalYT = ytData.reduce((a,b) => a+b, 0);
-const totalDH = Object.values(dathostMonthly).reduce((a,b) => a+b, 0);
-const total = totalYT + totalDH;
+let DATA = migrate(loadData());
 
-// Media solo de los últimos 3 meses completos (mar-may)
-const last3 = [3,4,5].map(i => totalData[i] + (i < allMonths.length ? 0 : 0));
-const avgLast3 = (totalData[7] + totalData[8] + totalData[9]) / 3;
-const avgAll = totalData.slice(0, 10).reduce((a,b) => a+b, 0) / 10;
+let periodFilter = 12;     // 6 | 12 | 0 (todo)
+let chartMode = 'abs';     // 'abs' | 'pct'
+let mainChart = null, trendChart = null, dailyChart = null;
+let lastDeleted = null;    // para deshacer
+let snackTimer = null;
 
-// Mejor mes
-const bestIdx = totalData.indexOf(Math.max(...totalData));
+function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
+persist();
 
-// Trend: comparar último mes vs primer mes
-const growth = ((totalData[9] - totalData[0]) / totalData[0] * 100).toFixed(0);
+// ============================================================
+// UTILIDADES
+// ============================================================
+const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => '€' + Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0 });
 
-// Render metric cards
-const cards = [
-  { label: "Total 12 meses", value: "€" + total.toLocaleString('es-ES', {maximumFractionDigits:0}), sub: "YouTube + Dathost", color: "#6c63ff" },
-  { label: "Media mensual reciente", value: "€" + avgLast3.toLocaleString('es-ES', {maximumFractionDigits:0}), sub: "Últimos 3 meses completos", color: "#22c55e" },
-  { label: "Mejor mes", value: "€" + Math.max(...totalData).toLocaleString('es-ES', {maximumFractionDigits:0}), sub: labels[bestIdx], color: "#f97316" },
-  { label: "Crecimiento", value: "+" + growth + "%", sub: "Ago 2025 → May 2026", color: "#ff6b6b" },
-];
+function monthLabel(key) {
+  const [y, m] = key.split('-');
+  return MONTH_NAMES[parseInt(m) - 1] + ' ' + y.slice(2);
+}
+function currentMonthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function daysInMonth(key) {
+  const [y, m] = key.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+function nextMonthKey(key) {
+  let [y, m] = key.split('-').map(Number);
+  m++; if (m > 12) { m = 1; y++; }
+  return y + '-' + String(m).padStart(2, '0');
+}
+function monthTotal(key) {
+  const m = DATA.months[key];
+  if (!m) return 0;
+  return DATA.sources.reduce((a, s) => a + (m[s.id] || 0), 0);
+}
+function sortedMonthKeys() { return Object.keys(DATA.months).sort(); }
 
-document.getElementById('metricCards').innerHTML = cards.map(c => `
-  <div class="card">
-    <div class="card-label">${c.label}</div>
-    <div class="card-value" style="color:${c.color}">${c.value}</div>
-    <div class="card-sub">${c.sub}</div>
-  </div>
-`).join('');
+// Línea temporal continua desde el primer mes hasta el último (rellena huecos con 0)
+function timeline() {
+  const keys = sortedMonthKeys();
+  if (!keys.length) return [];
+  const out = [];
+  let cur = keys[0];
+  const last = keys[keys.length - 1];
+  while (cur <= last) { out.push(cur); cur = nextMonthKey(cur); }
+  return out;
+}
+function visibleMonths() {
+  const all = timeline();
+  return periodFilter > 0 ? all.slice(-periodFilter) : all;
+}
 
-// Viral banner
-document.getElementById('viralBanner').innerHTML = `
-  <div class="viral-icon">🚀</div>
-  <div class="viral-text">
-    <h3>Momento viral detectado — finales de marzo 2026</h3>
-    <p>Un vídeo explotó a partir del 21 de marzo: pasaste de ~€20/día a más de €160/día en cuestión de días. Esto disparó YouTube de ~€19/mes a más de €850/mes. El canal está en un nivel completamente distinto ahora.</p>
-  </div>
-`;
+// Regresión lineal simple sobre los últimos meses completos → previsión
+function forecast(completeKeys, totalsAll, nAhead) {
+  const n = Math.min(6, completeKeys.length);
+  if (n < 3) return [];
+  const ys = completeKeys.slice(-n).map(k => totalsAll[k]);
+  const xs = ys.map((_, i) => i);
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+  const slope = den === 0 ? 0 : num / den;
+  const intercept = my - slope * mx;
+  const out = [];
+  for (let j = 1; j <= nAhead; j++) {
+    out.push(Math.max(0, +(intercept + slope * (n - 1 + j)).toFixed(2)));
+  }
+  return out;
+}
 
-// Main Chart
-new Chart(document.getElementById('mainChart'), {
-  type: 'bar',
-  data: {
-    labels,
-    datasets: [
-      {
-        label: 'YouTube',
-        data: ytData,
-        backgroundColor: 'rgba(255,0,0,0.75)',
-        borderRadius: 6,
-        stack: 'a',
-      },
-      {
-        label: 'Dathost',
-        data: dhData,
-        backgroundColor: 'rgba(249,115,22,0.8)',
-        borderRadius: 6,
-        stack: 'a',
-      },
-      {
-        label: 'Media móvil 3m',
-        data: movingAvg,
-        type: 'line',
-        borderColor: '#6c63ff',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [5,3],
-        pointRadius: 3,
-        pointBackgroundColor: '#6c63ff',
-        tension: 0.4,
-        stack: 'b',
-        yAxisID: 'y',
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#1a1d27',
-        titleColor: '#f0f2ff',
-        bodyColor: '#8b90a8',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        callbacks: {
-          footer: (items) => {
-            const total = items.filter(i => i.dataset.label !== 'Media móvil 3m').reduce((a,b) => a + b.raw, 0);
-            return 'Total: €' + total.toFixed(0);
+// ============================================================
+// RENDER PRINCIPAL
+// ============================================================
+function render() {
+  const all = timeline();
+  const nowKey = currentMonthKey();
+  const complete = all.filter(k => k < nowKey);
+  const totalsAll = Object.fromEntries(all.map(k => [k, monthTotal(k)]));
+
+  const today = new Date();
+  document.getElementById('subtitle').textContent =
+    'Actualizado a ' + today.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) +
+    ' · ' + DATA.sources.map(s => s.name).join(' + ');
+
+  // --- métricas
+  const totalAcum = all.reduce((a, k) => a + totalsAll[k], 0);
+  const last3 = complete.slice(-3);
+  const avg3 = last3.length ? last3.reduce((a, k) => a + totalsAll[k], 0) / last3.length : 0;
+  const bestKey = complete.reduce((b, k) => totalsAll[k] > (totalsAll[b] || 0) ? k : b, complete[0]);
+  const curVal = totalsAll[nowKey] || 0;
+  const dayOfMonth = today.getDate();
+  const proj = dayOfMonth > 0 ? curVal / dayOfMonth * daysInMonth(nowKey) : 0;
+  const hasCurMonth = nowKey in DATA.months;
+
+  // año en curso
+  const yearKey = String(today.getFullYear());
+  const ytdKeys = all.filter(k => k.startsWith(yearKey));
+  const ytdBruto = ytdKeys.reduce((a, k) => a + totalsAll[k], 0);
+  const ytdGastos = ytdKeys.reduce((a, k) => a + ((DATA.months[k] || {}).gastos || 0), 0);
+  const ytdNeto = ytdBruto - ytdGastos;
+  const reserva = Math.max(0, ytdNeto) * (DATA.taxRate || 0) / 100;
+
+  const cards = [
+    { label: 'Total acumulado', value: fmt(totalAcum), sub: all.length + ' meses · todas las fuentes', color: 'var(--accent)' },
+    { label: 'Media mensual reciente', value: fmt(avg3), sub: 'Últimos ' + last3.length + ' meses completos', color: 'var(--green)' },
+    { label: 'Mejor mes', value: fmt(totalsAll[bestKey] || 0), sub: bestKey ? monthLabel(bestKey) : '—', color: 'var(--dh)' },
+    hasCurMonth
+      ? { label: 'Mes actual (parcial)', value: fmt(curVal), sub: 'Proyección: ' + fmt(proj) + ' · día ' + dayOfMonth + '/' + daysInMonth(nowKey), color: 'var(--accent2)' }
+      : { label: 'Proyección anual', value: fmt(avg3 * 12), sub: 'Según media últimos 3 meses', color: 'var(--accent2)' },
+    { label: 'Año ' + yearKey, value: fmt(ytdBruto), sub: ytdGastos > 0 ? 'Neto: ' + fmt(ytdNeto) + ' (gastos −' + fmt(ytdGastos) + ')' : ytdKeys.length + ' meses registrados', color: 'var(--accent)' },
+    { label: 'Hucha fiscal sugerida', value: fmt(reserva), sub: (DATA.taxRate || 0) + '% del neto ' + yearKey, color: 'var(--green)' }
+  ];
+  document.getElementById('metricCards').innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="card-label">${c.label}</div>
+      <div class="card-value" style="color:${c.color}">${c.value}</div>
+      <div class="card-sub">${c.sub}</div>
+    </div>`).join('');
+
+  // --- objetivos
+  const goal = DATA.goal || 0;
+  const yGoal = DATA.yearGoal || 0;
+  const pctNow = goal > 0 ? Math.min(curVal / goal * 100, 100) : 0;
+  const pctProj = goal > 0 ? Math.min(proj / goal * 100, 100) : 0;
+  const pctYear = yGoal > 0 ? Math.min(ytdBruto / yGoal * 100, 100) : 0;
+  document.getElementById('goalCard').innerHTML = `
+    <div>
+      <div class="goal-head">
+        <span class="goal-title">🎯 Objetivo mensual: ${fmt(goal)}</span>
+        <span class="badge ${proj >= goal ? 'badge-green' : 'badge-orange'}">${goal > 0 ? (proj / goal * 100).toFixed(0) : 0}% proyectado</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${pctNow}%"></div>
+        <div class="progress-proj" style="left:${pctProj}%" title="Proyección fin de mes"></div>
+      </div>
+      <div class="goal-sub">
+        <span>${monthLabel(nowKey)}: ${fmt(curVal)} (${goal > 0 ? (curVal / goal * 100).toFixed(0) : 0}%)</span>
+        <span>Marca naranja = proyección (${fmt(proj)})</span>
+      </div>
+    </div>
+    <div>
+      <div class="goal-head">
+        <span class="goal-title">📅 Objetivo ${yearKey}: ${fmt(yGoal)}</span>
+        <span class="badge ${ytdBruto >= yGoal ? 'badge-green' : 'badge-purple'}">${yGoal > 0 ? (ytdBruto / yGoal * 100).toFixed(0) : 0}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill green" style="width:${pctYear}%"></div>
+      </div>
+      <div class="goal-sub">
+        <span>Acumulado ${yearKey}: ${fmt(ytdBruto)}</span>
+        <span>${yGoal > ytdBruto ? 'Faltan ' + fmt(yGoal - ytdBruto) : '¡Objetivo cumplido! 🎉'}</span>
+      </div>
+    </div>`;
+
+  // --- banner: mayor salto mes a mes
+  let jumpKey = null, jumpDiff = 0;
+  for (let i = 1; i < complete.length; i++) {
+    const d = totalsAll[complete[i]] - totalsAll[complete[i - 1]];
+    if (d > jumpDiff) { jumpDiff = d; jumpKey = complete[i]; }
+  }
+  const banner = document.getElementById('viralBanner');
+  const prevJump = jumpKey ? totalsAll[complete[complete.indexOf(jumpKey) - 1]] : 0;
+  if (jumpKey && jumpDiff > 100 && totalsAll[jumpKey] > 1.5 * Math.max(prevJump, 1)) {
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="viral-icon">🚀</div>
+      <div class="viral-text">
+        <h3>Mayor salto de ingresos: ${monthLabel(jumpKey)}</h3>
+        <p>Subiste ${fmt(jumpDiff)} respecto al mes anterior (de ${fmt(prevJump)} a ${fmt(totalsAll[jumpKey])}). El canal cambió de nivel ese mes.</p>
+      </div>`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  renderMainChart(totalsAll, nowKey);
+  renderTrendChart(totalsAll, nowKey, bestKey, complete);
+  renderDailyChart();
+  renderFiscal(all, totalsAll, nowKey);
+  renderBreakdown(totalsAll, nowKey);
+  renderSources(totalsAll, all, complete, avg3);
+}
+
+// ============================================================
+// GRÁFICO PRINCIPAL (barras apiladas € / %)
+// ============================================================
+function renderMainChart(totalsAll, nowKey) {
+  const months = visibleMonths();
+  const labels = months.map(monthLabel);
+  const isPct = chartMode === 'pct';
+
+  document.getElementById('mainChartTitle').textContent = isPct ? 'Reparto por fuente (%)' : 'Ingresos mensuales combinados';
+  document.getElementById('mainLegend').innerHTML = DATA.sources.map(s =>
+    `<span class="legend-item"><span class="legend-dot" style="background:${s.color}"></span>${esc(s.name)}</span>`
+  ).join('') + (isPct ? '' : `<span class="legend-item"><span class="legend-dot" style="background:#6c63ff; width:20px; height:3px; border-radius:2px"></span>Media móvil 3m</span>`);
+
+  const movingAvg = months.map((k, i) => {
+    if (i < 2 || k === nowKey) return null;
+    return +((totalsAll[months[i - 2]] + totalsAll[months[i - 1]] + totalsAll[k]) / 3).toFixed(2);
+  });
+
+  const barDatasets = DATA.sources.map(s => ({
+    label: s.name,
+    data: months.map(k => {
+      const v = ((DATA.months[k] || {})[s.id]) || 0;
+      if (!isPct) return +v.toFixed(2);
+      const t = totalsAll[k];
+      return t > 0 ? +(v / t * 100).toFixed(1) : 0;
+    }),
+    backgroundColor: months.map(k => k === nowKey ? s.color + '66' : s.color + 'C0'),
+    borderRadius: 6,
+    stack: 'a'
+  }));
+
+  const datasets = [...barDatasets];
+  if (!isPct) {
+    datasets.push({
+      label: 'Media móvil 3m',
+      data: movingAvg,
+      type: 'line',
+      borderColor: '#6c63ff',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderDash: [5, 3],
+      pointRadius: 3,
+      pointBackgroundColor: '#6c63ff',
+      tension: 0.4,
+      stack: 'b'
+    });
+  }
+
+  if (mainChart) mainChart.destroy();
+  mainChart = new Chart(document.getElementById('mainChart'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27', titleColor: '#f0f2ff', bodyColor: '#8b90a8',
+          borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          callbacks: {
+            title: items => items[0].label + (months[items[0].dataIndex] === nowKey ? ' (parcial)' : ''),
+            label: item => ' ' + item.dataset.label + ': ' + (isPct ? item.raw + '%' : fmt(item.raw)),
+            footer: items => {
+              if (isPct) return '';
+              const t = items.filter(i => i.dataset.label !== 'Media móvil 3m').reduce((a, b) => a + b.raw, 0);
+              return 'Total: ' + fmt(t);
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        stacked: true,
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        ticks: { color: '#8b90a8', font: { size: 12 }, autoSkip: false, maxRotation: 0 }
       },
-      y: {
-        stacked: true,
-        grid: { color: 'rgba(255,255,255,0.06)' },
-        ticks: {
-          color: '#8b90a8',
-          font: { size: 12 },
-          callback: v => '€' + v.toLocaleString('es-ES')
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(140,144,168,0.08)' }, ticks: { color: '#8b90a8', font: { size: 12 }, autoSkip: true, maxRotation: 0 } },
+        y: {
+          stacked: true,
+          max: isPct ? 100 : undefined,
+          grid: { color: 'rgba(140,144,168,0.12)' },
+          ticks: { color: '#8b90a8', font: { size: 12 }, callback: v => isPct ? v + '%' : '€' + v.toLocaleString('es-ES') }
         }
       }
     }
-  }
-});
+  });
+}
 
-// Trend Chart
-const trendCtx = document.getElementById('trendChart');
-new Chart(trendCtx, {
-  type: 'line',
-  data: {
-    labels,
-    datasets: [
-      {
-        label: 'Total ingresos',
-        data: totalData,
-        borderColor: '#6c63ff',
-        backgroundColor: 'rgba(108,99,255,0.08)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 5,
-        pointBackgroundColor: totalData.map((v, i) => v === Math.max(...totalData) ? '#f97316' : '#6c63ff'),
-        pointRadius: totalData.map((v, i) => v === Math.max(...totalData) ? 8 : 4),
-        borderWidth: 2.5,
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: '#1a1d27',
-        titleColor: '#f0f2ff',
-        bodyColor: '#8b90a8',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        callbacks: {
-          label: (item) => ' €' + item.raw.toFixed(0)
+// ============================================================
+// TENDENCIA + PREVISIÓN
+// ============================================================
+function renderTrendChart(totalsAll, nowKey, bestKey, complete) {
+  const months = visibleMonths();
+  const fc = forecast(complete, totalsAll, 3);
+  const futureKeys = [];
+  if (fc.length) {
+    let k = months[months.length - 1];
+    for (let i = 0; i < fc.length; i++) { k = nextMonthKey(k); futureKeys.push(k); }
+  }
+  const labels = [...months.map(monthLabel), ...futureKeys.map(monthLabel)];
+  const totals = [...months.map(k => totalsAll[k]), ...futureKeys.map(() => null)];
+
+  // línea de previsión: conecta desde el último mes registrado
+  const fcData = labels.map(() => null);
+  if (fc.length) {
+    fcData[months.length - 1] = totalsAll[months[months.length - 1]];
+    fc.forEach((v, i) => { fcData[months.length + i] = v; });
+  }
+
+  const today = new Date();
+  const projData = labels.map((_, i) => {
+    if (i >= months.length || months[i] !== nowKey) return null;
+    return +(totalsAll[nowKey] / today.getDate() * daysInMonth(nowKey)).toFixed(2);
+  });
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total ingresos',
+          data: totals,
+          borderColor: '#6c63ff',
+          backgroundColor: 'rgba(108,99,255,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: months.map(k => k === bestKey ? '#f97316' : '#6c63ff'),
+          pointRadius: months.map(k => k === bestKey ? 8 : 4),
+          borderWidth: 2.5
+        },
+        {
+          label: 'Previsión',
+          data: fcData,
+          borderColor: '#8b90a8',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 4,
+          pointStyle: 'rectRot',
+          pointBackgroundColor: '#8b90a8',
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: 'Proyección',
+          data: projData,
+          borderColor: 'transparent',
+          pointBackgroundColor: 'transparent',
+          pointBorderColor: '#f97316',
+          pointBorderWidth: 2,
+          pointRadius: 7
         }
-      }
+      ]
     },
-    scales: {
-      x: {
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        ticks: { color: '#8b90a8', font: { size: 12 }, autoSkip: false, maxRotation: 0 }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27', titleColor: '#f0f2ff', bodyColor: '#8b90a8',
+          borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          filter: item => item.raw !== null,
+          callbacks: {
+            label: item => ' ' + (item.dataset.label === 'Total ingresos' ? '' : item.dataset.label + ': ') + fmt(item.raw)
+          }
+        }
       },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.06)' },
-        ticks: { color: '#8b90a8', font: { size: 12 }, callback: v => '€' + v.toLocaleString('es-ES') }
+      scales: {
+        x: { grid: { color: 'rgba(140,144,168,0.08)' }, ticks: { color: '#8b90a8', font: { size: 12 }, autoSkip: true, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(140,144,168,0.12)' }, ticks: { color: '#8b90a8', font: { size: 12 }, callback: v => '€' + v.toLocaleString('es-ES') } }
       }
     }
+  });
+}
+
+// ============================================================
+// GRÁFICO DIARIO
+// ============================================================
+function renderDailyChart() {
+  const card = document.getElementById('dailyCard');
+  const entries = Object.entries(DATA.daily || {}).sort((a, b) => a[0] < b[0] ? -1 : 1);
+  if (entries.length < 14) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  const last90 = entries.slice(-90);
+  const labels = last90.map(([d]) => {
+    const dt = d.split('-');
+    return parseInt(dt[2]) + ' ' + MONTH_NAMES[parseInt(dt[1]) - 1];
+  });
+  const vals = last90.map(([, v]) => v);
+  const ma7 = vals.map((_, i) => {
+    if (i < 6) return null;
+    let s = 0;
+    for (let j = i - 6; j <= i; j++) s += vals[j];
+    return +(s / 7).toFixed(2);
+  });
+  const lastDate = last90[last90.length - 1][0];
+  document.getElementById('dailyNote').textContent =
+    'Fuente YouTube · último dato: ' + lastDate + ' · actualiza en Datos ▾ → Importar CSV diario';
+
+  if (dailyChart) dailyChart.destroy();
+  dailyChart = new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Ingresos diarios', data: vals, backgroundColor: 'rgba(255,0,0,0.55)', borderRadius: 2 },
+        { label: 'Media 7 días', data: ma7, type: 'line', borderColor: '#6c63ff', borderWidth: 2, pointRadius: 0, tension: 0.35 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27', titleColor: '#f0f2ff', bodyColor: '#8b90a8',
+          borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          callbacks: { label: item => ' ' + item.dataset.label + ': €' + Number(item.raw).toFixed(2) }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b90a8', font: { size: 10 }, maxTicksLimit: 12, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(140,144,168,0.12)' }, ticks: { color: '#8b90a8', font: { size: 11 }, callback: v => '€' + v } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// RESUMEN FISCAL TRIMESTRAL
+// ============================================================
+function renderFiscal(all, totalsAll, nowKey) {
+  const rate = DATA.taxRate || 0;
+  document.getElementById('fiscalNote').textContent = 'Bruto, gastos y neto por trimestre · hucha ' + rate + '%';
+  const quarters = {};
+  for (const k of all) {
+    const [y, m] = k.split('-').map(Number);
+    const q = y + '-T' + Math.ceil(m / 3);
+    if (!quarters[q]) quarters[q] = { bruto: 0, gastos: 0 };
+    quarters[q].bruto += totalsAll[k];
+    quarters[q].gastos += (DATA.months[k] || {}).gastos || 0;
   }
+  const qKeys = Object.keys(quarters).sort();
+  const curQ = nowKey.split('-')[0] + '-T' + Math.ceil(parseInt(nowKey.split('-')[1]) / 3);
+  let html = `<tr><th>Trimestre</th><th>Bruto</th><th>Gastos</th><th>Neto</th><th>Hucha ${rate}%</th></tr>`;
+  let lastYear = '';
+  let yb = 0, yg = 0;
+  const yearRow = (year, b, g) => {
+    const n = b - g;
+    return `<tr class="year-row"><td>Total ${year}</td><td>${fmt(b)}</td><td>${g > 0 ? '−' + fmt(g) : '—'}</td><td>${fmt(n)}</td><td>${fmt(Math.max(0, n) * rate / 100)}</td></tr>`;
+  };
+  for (const q of qKeys) {
+    const [year] = q.split('-');
+    if (lastYear && year !== lastYear) { html += yearRow(lastYear, yb, yg); yb = 0; yg = 0; }
+    lastYear = year;
+    const d = quarters[q];
+    yb += d.bruto; yg += d.gastos;
+    const neto = d.bruto - d.gastos;
+    html += `<tr>
+      <td>${q.replace('-', ' ')}${q === curQ ? ' <span class="badge badge-purple">en curso</span>' : ''}</td>
+      <td>${fmt(d.bruto)}</td>
+      <td>${d.gastos > 0 ? '−' + fmt(d.gastos) : '—'}</td>
+      <td style="font-weight:600">${fmt(neto)}</td>
+      <td style="color:var(--green)">${fmt(Math.max(0, neto) * rate / 100)}</td>
+    </tr>`;
+  }
+  if (lastYear) html += yearRow(lastYear, yb, yg);
+  document.getElementById('fiscalTable').innerHTML = html;
+}
+
+// ============================================================
+// DESGLOSE Y FUENTES
+// ============================================================
+function renderBreakdown(totalsAll, nowKey) {
+  const tl = visibleMonths();
+  const months = tl.slice().reverse(); // más reciente arriba
+  document.getElementById('monthlyBreakdown').innerHTML = months.map(k => {
+    const i = tl.indexOf(k);
+    const prev = i > 0 ? totalsAll[tl[i - 1]] : null;
+    const diff = prev === null ? null : totalsAll[k] - prev;
+    const entry = DATA.months[k] || {};
+    const gastos = entry.gastos || 0;
+    const badge = k === nowKey ? `<span class="badge badge-purple">parcial</span>` :
+      diff === null ? '' :
+      diff >= 0 ? `<span class="badge badge-green">+${fmt(diff)}</span>` :
+      `<span class="badge badge-red">−${fmt(Math.abs(diff))}</span>`;
+    const gastosTxt = gastos > 0 ? `<span style="color:var(--text3);font-size:12px" title="Gastos deducibles">−${fmt(gastos)}</span>` : '';
+    const notaTxt = entry.nota ? `<span class="nota-icon" title="${esc(entry.nota)}">📝</span>` : '';
+    return `<div class="insight-row">
+      <span>${monthLabel(k)} ${notaTxt} ${gastosTxt}</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        ${badge}
+        <span class="val">${fmt(totalsAll[k])}</span>
+        <span class="row-actions">
+          <button class="icon-btn" title="Editar ${monthLabel(k)}" aria-label="Editar ${monthLabel(k)}" onclick="openMonthModal('${k}')">✏️</button>
+          <button class="icon-btn" title="Eliminar ${monthLabel(k)}" aria-label="Eliminar ${monthLabel(k)}" onclick="deleteMonth('${k}')">🗑️</button>
+        </span>
+      </span>
+    </div>`;
+  }).join('') || '<div class="insight-row"><span style="color:var(--text3)">Sin datos — añade tu primer mes</span></div>';
+}
+
+function renderSources(totalsAll, all, complete, avg3) {
+  const total = all.reduce((a, k) => a + totalsAll[k], 0);
+  const totalGastos = all.reduce((a, k) => a + ((DATA.months[k] || {}).gastos || 0), 0);
+  const rows = DATA.sources.map(s => {
+    const sum = all.reduce((a, k) => a + ((DATA.months[k] || {})[s.id] || 0), 0);
+    const pct = total > 0 ? (sum / total * 100).toFixed(1) : '0';
+    return `<div class="insight-row">
+      <span><span class="dot" style="background:${s.color};display:inline-block;margin-right:6px"></span>${esc(s.name)}</span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="badge" style="background:${s.color}26;color:${s.color}">${pct}%</span>
+        <span class="val">${fmt(sum)}</span>
+      </span>
+    </div>`;
+  }).join('');
+  const avgAll = complete.length ? complete.reduce((a, k) => a + totalsAll[k], 0) / complete.length : 0;
+  document.getElementById('sourceBreakdown').innerHTML = `
+    <div class="insight-title"><span class="dot" style="background:var(--accent2)"></span>Por fuente (${all.length} meses)</div>
+    ${rows}
+    <div class="insight-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:12px">
+      <span style="font-weight:600">Total bruto</span>
+      <span class="val" style="color:var(--accent)">${fmt(total)}</span>
+    </div>
+    ${totalGastos > 0 ? `
+    <div class="insight-row">
+      <span>Gastos deducibles</span>
+      <span class="val" style="color:var(--accent2)">−${fmt(totalGastos)}</span>
+    </div>
+    <div class="insight-row">
+      <span style="font-weight:600">Neto (antes de impuestos)</span>
+      <span class="val" style="color:var(--green)">${fmt(total - totalGastos)}</span>
+    </div>` : ''}
+    <div class="insight-row">
+      <span>Media mensual (${complete.length} meses completos)</span>
+      <span class="val">${fmt(avgAll)}</span>
+    </div>
+    <div class="insight-row">
+      <span>Media últimos 3 meses</span>
+      <span class="val" style="color:var(--green)">${fmt(avg3)}</span>
+    </div>
+    <div class="insight-row">
+      <span>Proyección anual actual</span>
+      <span class="val" style="color:var(--dh)">${fmt(avg3 * 12)}</span>
+    </div>`;
+}
+
+// ============================================================
+// EDICIÓN DE DATOS
+// ============================================================
+let editingMonth = null;
+
+function openMonthModal(key) {
+  editingMonth = key || null;
+  document.getElementById('monthModalTitle').textContent = key ? 'Editar ' + monthLabel(key) : 'Añadir mes';
+  const mInput = document.getElementById('mInput');
+  mInput.value = key || currentMonthKey();
+  mInput.disabled = !!key;
+  const m = key ? DATA.months[key] : null;
+  document.getElementById('sourceFields').innerHTML = DATA.sources.map(s => `
+    <div class="field">
+      <label for="src_${s.id}">${esc(s.name)} (€)</label>
+      <input type="number" id="src_${s.id}" min="0" step="0.01" placeholder="0" value="${m && m[s.id] ? m[s.id] : ''}">
+    </div>`).join('');
+  document.getElementById('mGastos').value = m && m.gastos ? m.gastos : '';
+  document.getElementById('mNota').value = m && m.nota ? m.nota : '';
+  document.getElementById('monthModal').classList.add('open');
+}
+
+function saveMonth() {
+  const key = document.getElementById('mInput').value;
+  if (!/^\d{4}-\d{2}$/.test(key)) { alert('Selecciona un mes válido.'); return; }
+  if (!editingMonth && DATA.months[key]) {
+    if (!confirm(monthLabel(key) + ' ya tiene datos. ¿Sobrescribir?')) return;
+  }
+  const entry = { gastos: parseFloat(document.getElementById('mGastos').value) || 0 };
+  const nota = document.getElementById('mNota').value.trim();
+  if (nota) entry.nota = nota;
+  for (const s of DATA.sources) {
+    entry[s.id] = parseFloat(document.getElementById('src_' + s.id).value) || 0;
+  }
+  DATA.months[key] = entry;
+  persist();
+  closeModal('monthModal');
+  render();
+}
+
+function deleteMonth(key) {
+  lastDeleted = { key, entry: DATA.months[key] };
+  delete DATA.months[key];
+  persist();
+  render();
+  showSnackbar('Eliminado ' + monthLabel(key), 'Deshacer', () => {
+    if (!lastDeleted) return;
+    DATA.months[lastDeleted.key] = lastDeleted.entry;
+    lastDeleted = null;
+    persist();
+    render();
+  });
+}
+
+function showSnackbar(msg, actionLabel, actionFn) {
+  const bar = document.getElementById('snackbar');
+  bar.innerHTML = `<span>${esc(msg)}</span>`;
+  if (actionLabel) {
+    const b = document.createElement('button');
+    b.textContent = actionLabel;
+    b.onclick = () => { bar.classList.remove('show'); actionFn(); };
+    bar.appendChild(b);
+  }
+  bar.classList.add('show');
+  clearTimeout(snackTimer);
+  snackTimer = setTimeout(() => bar.classList.remove('show'), 6000);
+}
+
+// ============================================================
+// AJUSTES Y TEMA
+// ============================================================
+function openSettingsModal() {
+  document.getElementById('sGoal').value = DATA.goal || 0;
+  document.getElementById('sYearGoal').value = DATA.yearGoal || 0;
+  document.getElementById('sTaxRate').value = DATA.taxRate || 0;
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function saveSettings() {
+  const g = parseFloat(document.getElementById('sGoal').value);
+  const yg = parseFloat(document.getElementById('sYearGoal').value);
+  const tr = parseFloat(document.getElementById('sTaxRate').value);
+  if (!isNaN(g) && g >= 0) DATA.goal = g;
+  if (!isNaN(yg) && yg >= 0) DATA.yearGoal = yg;
+  if (!isNaN(tr) && tr >= 0 && tr <= 60) DATA.taxRate = tr;
+  persist();
+  closeModal('settingsModal');
+  render();
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = DATA.theme;
+  document.getElementById('themeBtn').textContent = DATA.theme === 'dark' ? '🌙' : '☀️';
+  document.querySelector('meta[name="theme-color"]').content = DATA.theme === 'dark' ? '#0f1117' : '#f4f5fa';
+}
+
+function toggleTheme() {
+  DATA.theme = DATA.theme === 'dark' ? 'light' : 'dark';
+  persist();
+  applyTheme();
+}
+
+// ============================================================
+// FUENTES
+// ============================================================
+function openSourcesModal() {
+  renderSourcesList();
+  document.getElementById('sourcesModal').classList.add('open');
+}
+
+function renderSourcesList() {
+  const wrap = document.getElementById('sourcesList');
+  wrap.innerHTML = '';
+  for (const s of DATA.sources) {
+    const row = document.createElement('div');
+    row.className = 'source-list-row';
+    const color = document.createElement('input');
+    color.type = 'color'; color.value = s.color;
+    color.title = 'Color de ' + s.name;
+    color.addEventListener('change', () => { s.color = color.value; persist(); render(); });
+    const name = document.createElement('input');
+    name.type = 'text'; name.value = s.name;
+    name.addEventListener('change', () => {
+      const v = name.value.trim();
+      if (v) { s.name = v; persist(); render(); } else { name.value = s.name; }
+    });
+    const del = document.createElement('button');
+    del.className = 'icon-btn'; del.textContent = '🗑️';
+    del.title = 'Eliminar ' + s.name;
+    del.addEventListener('click', () => deleteSource(s.id));
+    row.append(color, name, del);
+    wrap.appendChild(row);
+  }
+}
+
+function addSource() {
+  const name = document.getElementById('newSourceName').value.trim();
+  if (!name) { alert('Escribe un nombre para la fuente.'); return; }
+  const color = document.getElementById('newSourceColor').value;
+  const id = 's' + Date.now().toString(36);
+  DATA.sources.push({ id, name, color });
+  persist();
+  document.getElementById('newSourceName').value = '';
+  renderSourcesList();
+  render();
+}
+
+function deleteSource(id) {
+  const s = DATA.sources.find(x => x.id === id);
+  if (!s) return;
+  const hasData = Object.values(DATA.months).some(m => (m[id] || 0) > 0);
+  const msg = hasData
+    ? '"' + s.name + '" tiene importes registrados que se perderán. ¿Eliminar igualmente?'
+    : '¿Eliminar la fuente "' + s.name + '"?';
+  if (!confirm(msg)) return;
+  DATA.sources = DATA.sources.filter(x => x.id !== id);
+  for (const m of Object.values(DATA.months)) delete m[id];
+  persist();
+  renderSourcesList();
+  render();
+}
+
+// ============================================================
+// EXPORT / IMPORT / RESET
+// ============================================================
+function pickFile(id) {
+  closeDataMenu();
+  document.getElementById(id).click();
+}
+
+function download(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportCSV() {
+  closeDataMenu();
+  const keys = timeline();
+  const header = ['Mes', ...DATA.sources.map(s => s.name), 'Gastos', 'Total bruto', 'Neto', 'Nota'];
+  const lines = keys.map(k => {
+    const m = DATA.months[k] || {};
+    const vals = DATA.sources.map(s => (m[s.id] || 0).toFixed(2));
+    const total = monthTotal(k);
+    const gastos = m.gastos || 0;
+    const nota = (m.nota || '').replace(/[\r\n;]+/g, ' ');
+    return [k, ...vals, gastos.toFixed(2), total.toFixed(2), (total - gastos).toFixed(2), nota].join(';');
+  });
+  // separador ; y BOM para que Excel en español lo abra bien
+  download('ingresos_doublelag.csv', '﻿' + header.join(';') + '\n' + lines.join('\n'), 'text/csv;charset=utf-8');
+}
+
+function exportJSON() {
+  closeDataMenu();
+  download('ingresos_doublelag_backup.json', JSON.stringify(DATA, null, 2), 'application/json');
+}
+
+function importJSON(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (!d.months || !d.sources || !Array.isArray(d.sources)) throw new Error('formato');
+      if (!confirm('Esto reemplazará TODOS los datos actuales por los del archivo. ¿Continuar?')) return;
+      DATA = migrate(d);
+      persist();
+      applyTheme();
+      render();
+      showSnackbar('Backup importado correctamente');
+    } catch (e) {
+      alert('El archivo no es un backup válido de este dashboard.');
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+// Importa el CSV diario exportado desde YouTube Studio (fecha + ingresos estimados)
+function importYtCSV(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result).replace(/^﻿/, '');
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const sep = (lines[0] || '').includes(';') ? ';' : ',';
+    const parsed = {};
+    let count = 0;
+    for (const line of lines) {
+      const cells = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+      let dateKey = null;
+      // admite YYYY-MM-DD y DD/MM/YYYY
+      for (const c of cells) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(c)) { dateKey = c; break; }
+        const dm = c.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (dm) { dateKey = dm[3] + '-' + dm[2].padStart(2, '0') + '-' + dm[1].padStart(2, '0'); break; }
+      }
+      if (!dateKey) continue;
+      // primer valor numérico que no sea la fecha
+      let val = null;
+      for (const c of cells) {
+        if (c === dateKey || /\d{4}-\d{2}-\d{2}/.test(c) || c.includes('/')) continue;
+        const n = parseFloat(sep === ';' ? c.replace(/\./g, '').replace(',', '.') : c.replace(/,/g, ''));
+        if (!isNaN(n)) { val = n; break; }
+      }
+      if (val === null) continue;
+      parsed[dateKey] = val;
+      count++;
+    }
+    if (!count) { alert('No se encontraron filas con fecha e importe en el CSV. Exporta desde YouTube Studio el informe diario de ingresos estimados.'); return; }
+    if (!DATA.daily) DATA.daily = {};
+    Object.assign(DATA.daily, parsed);
+    // recalcular los meses afectados para la fuente YouTube
+    const ytSource = DATA.sources.find(s => s.id === 'yt') || DATA.sources[0];
+    const affected = [...new Set(Object.keys(parsed).map(d => d.slice(0, 7)))];
+    for (const mk of affected) {
+      const sum = Object.entries(DATA.daily)
+        .filter(([d]) => d.startsWith(mk))
+        .reduce((a, [, v]) => a + v, 0);
+      if (!DATA.months[mk]) DATA.months[mk] = { gastos: 0 };
+      DATA.months[mk][ytSource.id] = +sum.toFixed(2);
+    }
+    persist();
+    render();
+    showSnackbar(count + ' días importados · ' + affected.length + ' mes(es) recalculado(s) en ' + ytSource.name);
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+function resetData() {
+  closeDataMenu();
+  if (!confirm('Esto borrará tus cambios y restaurará los datos originales (histórico YouTube + Dathost hasta junio 2026). ¿Continuar?')) return;
+  DATA = buildSeed();
+  persist();
+  applyTheme();
+  render();
+}
+
+// ============================================================
+// MENÚ, TABS Y EVENTOS GLOBALES
+// ============================================================
+function toggleDataMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('dataMenu');
+  const open = menu.classList.toggle('open');
+  document.getElementById('dataMenuBtn').setAttribute('aria-expanded', open);
+}
+function closeDataMenu() {
+  document.getElementById('dataMenu').classList.remove('open');
+  document.getElementById('dataMenuBtn').setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown')) closeDataMenu();
 });
 
-// Monthly breakdown table
-const monthNames = ['Ago 25','Sep 25','Oct 25','Nov 25','Dic 25','Ene 26','Feb 26','Mar 26','Abr 26','May 26'];
-const prevTotal = [totalData[0], ...totalData.slice(0, -1)];
-const monthRows = allMonths.map((m, i) => {
-  const diff = i === 0 ? null : totalData[i] - totalData[i-1];
-  const badge = i === 0 ? '' :
-    diff > 0 ? `<span class="badge badge-green">+€${diff.toFixed(0)}</span>` :
-    `<span class="badge badge-red">€${diff.toFixed(0)}</span>`;
-  return `<div class="insight-row">
-    <span>${monthNames[i]}</span>
-    <span style="display:flex;gap:8px;align-items:center">${badge}<span class="val">€${totalData[i].toFixed(0)}</span></span>
-  </div>`;
-}).join('');
+function setChartMode(mode) {
+  chartMode = mode;
+  document.getElementById('modeAbs').classList.toggle('active', mode === 'abs');
+  document.getElementById('modePct').classList.toggle('active', mode === 'pct');
+  render();
+}
 
-document.getElementById('monthlyBreakdown').innerHTML = `
-  <div class="insight-title"><span class="dot" style="background:#6c63ff"></span>Desglose mensual</div>
-  ${monthRows}
-`;
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// Source breakdown
-const pctYT = (totalYT / total * 100).toFixed(1);
-const pctDH = (totalDH / total * 100).toFixed(1);
-document.getElementById('sourceBreakdown').innerHTML = `
-  <div class="insight-title"><span class="dot" style="background:#ff6b6b"></span>Por fuente (12 meses)</div>
-  <div class="insight-row">
-    <span>🔴 YouTube AdSense</span>
-    <span style="display:flex;gap:8px;align-items:center">
-      <span class="badge badge-red">${pctYT}%</span>
-      <span class="val">€${totalYT.toFixed(0)}</span>
-    </span>
-  </div>
-  <div class="insight-row">
-    <span>🟠 Dathost Affiliate</span>
-    <span style="display:flex;gap:8px;align-items:center">
-      <span class="badge badge-orange">${pctDH}%</span>
-      <span class="val">€${totalDH.toFixed(0)}</span>
-    </span>
-  </div>
-  <div class="insight-row" style="border-top:1px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:12px">
-    <span style="font-weight:600">Total combinado</span>
-    <span class="val" style="color:#6c63ff">€${total.toFixed(0)}</span>
-  </div>
-  <div class="insight-row">
-    <span>Media mensual (10m)</span>
-    <span class="val">€${avgAll.toFixed(0)}</span>
-  </div>
-  <div class="insight-row">
-    <span>Media últimos 3 meses</span>
-    <span class="val" style="color:#22c55e">€${avgLast3.toFixed(0)}</span>
-  </div>
-  <div class="insight-row">
-    <span>Proyección anual actual</span>
-    <span class="val" style="color:#f97316">€${(avgLast3 * 12).toFixed(0)}</span>
-  </div>
-`;
+document.querySelectorAll('#periodTabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#periodTabs .tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    periodFilter = parseInt(t.dataset.period);
+    render();
+  });
+});
+
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); closeDataMenu(); }
+});
+
+// ============================================================
+// PWA (solo si los archivos existen junto al HTML)
+// ============================================================
+(async () => {
+  try {
+    const r = await fetch('manifest.webmanifest', { method: 'HEAD' });
+    if (r.ok) {
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = 'manifest.webmanifest';
+      document.head.appendChild(link);
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  } catch (e) { /* copia local sin PWA */ }
+})();
+
+applyTheme();
+render();
 </script>
 </body>
 </html>
