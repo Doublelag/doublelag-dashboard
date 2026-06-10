@@ -1,6 +1,6 @@
 // Service worker: network-first para la página (siempre fresca si hay conexión),
 // cache-first para recursos estáticos (Chart.js CDN, icono) para funcionar offline.
-const CACHE = 'doublelag-dashboard-v3';
+const CACHE = 'doublelag-dashboard-v3-1';
 const PRECACHE = [
   './',
   'index.html',
@@ -24,6 +24,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // data.json siempre por red (datos frescos), sin guardar en cache
+  if (req.url.includes('data.json')) return;
   if (req.mode === 'navigate' || req.destination === 'document') {
     // network-first: la página siempre actualizada; cache como respaldo offline
     e.respondWith(

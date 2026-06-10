@@ -511,6 +511,7 @@ function migrate(d) {
   if (d.taxRate === undefined) d.taxRate = 20;
   if (!d.theme) d.theme = 'dark';
   if (!d.daily) d.daily = { ...ytDaily };
+  if (!d.deletedMonths) d.deletedMonths = [];
   return d;
 }
 
@@ -1089,13 +1090,14 @@ function saveMonth() {
   if (!editingMonth && DATA.months[key]) {
     if (!confirm(monthLabel(key) + ' ya tiene datos. ¿Sobrescribir?')) return;
   }
-  const entry = { gastos: parseFloat(document.getElementById('mGastos').value) || 0 };
+  const entry = { gastos: parseFloat(document.getElementById('mGastos').value) || 0, manual: true };
   const nota = document.getElementById('mNota').value.trim();
   if (nota) entry.nota = nota;
   for (const s of DATA.sources) {
     entry[s.id] = parseFloat(document.getElementById('src_' + s.id).value) || 0;
   }
   DATA.months[key] = entry;
+  DATA.deletedMonths = (DATA.deletedMonths || []).filter(k => k !== key);
   persist();
   closeModal('monthModal');
   render();
@@ -1104,11 +1106,13 @@ function saveMonth() {
 function deleteMonth(key) {
   lastDeleted = { key, entry: DATA.months[key] };
   delete DATA.months[key];
+  if (!DATA.deletedMonths.includes(key)) DATA.deletedMonths.push(key);
   persist();
   render();
   showSnackbar('Eliminado ' + monthLabel(key), 'Deshacer', () => {
     if (!lastDeleted) return;
     DATA.months[lastDeleted.key] = lastDeleted.entry;
+    DATA.deletedMonths = DATA.deletedMonths.filter(k => k !== lastDeleted.key);
     lastDeleted = null;
     persist();
     render();
@@ -1388,6 +1392,38 @@ document.addEventListener('keydown', e => {
 });
 
 // ============================================================
+// SINCRONIZACIÓN REMOTA (data.json publicado en el repo)
+// Reglas: los meses borrados por el usuario no se re-crean; en los
+// meses editados a mano solo se rellenan importes vacíos o a 0.
+// ============================================================
+async function syncRemote() {
+  try {
+    const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const remote = await r.json();
+    if (!remote || !remote.months) return;
+    let changed = false;
+    for (const [k, vals] of Object.entries(remote.months)) {
+      if (!/^\d{4}-\d{2}$/.test(k) || typeof vals !== 'object') continue;
+      if (DATA.deletedMonths.includes(k)) continue;
+      const entry = DATA.months[k] || { gastos: 0 };
+      const isManual = !!entry.manual;
+      for (const [src, v] of Object.entries(vals)) {
+        if (typeof v !== 'number' || !DATA.sources.some(s => s.id === src)) continue;
+        if (isManual && entry[src]) continue; // respeta lo escrito a mano
+        if (entry[src] !== v) { entry[src] = v; changed = true; }
+      }
+      DATA.months[k] = entry;
+    }
+    if (changed) {
+      persist();
+      render();
+      showSnackbar('☁ Datos actualizados desde GitHub' + (remote.updated ? ' (' + remote.updated + ')' : ''));
+    }
+  } catch (e) { /* sin conexión o copia local: seguimos con lo guardado */ }
+}
+
+// ============================================================
 // PWA (solo si los archivos existen junto al HTML)
 // ============================================================
 (async () => {
@@ -1405,6 +1441,7 @@ document.addEventListener('keydown', e => {
 
 applyTheme();
 render();
+syncRemote();
 </script>
 </body>
 </html>
