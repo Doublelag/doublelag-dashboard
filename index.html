@@ -505,7 +505,7 @@ function buildSeed() {
     goal: 1500,
     yearGoal: 18000,
     taxRate: 20,
-    fiscal: { altaMonth: '2025-11', cuotaActual: 88 },
+    fiscal: { altaMonth: '2026-01', cuotaActual: 88 },
     theme: 'dark',
     sources: [
       { id: 'yt', name: 'YouTube AdSense', color: '#ff0000' },
@@ -529,7 +529,8 @@ function migrate(d) {
   if (!d.theme) d.theme = 'dark';
   if (!d.daily) d.daily = { ...ytDaily };
   if (!d.deletedMonths) d.deletedMonths = [];
-  if (!d.fiscal) d.fiscal = { altaMonth: '2025-11', cuotaActual: 88 };
+  if (!d.fiscal) d.fiscal = { altaMonth: '2026-01', cuotaActual: 88 };
+  else if (d.fiscal.altaMonth === '2025-11') d.fiscal.altaMonth = '2026-01'; // corrige el default provisional del 11-jun-2026
   return d;
 }
 
