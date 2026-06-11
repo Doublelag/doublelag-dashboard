@@ -1,14 +1,18 @@
 {
-  "_doc": "Datos publicados que el dashboard fusiona al cargar. Claves de fuente: yt = YouTube AdSense, dh = Dathost Affiliate. Lo actualiza la rutina mensual automática; los importes son EUR del mes en que se GANARON (el pago de Dathost llega el mes siguiente).",
-  "_fuente": "Informe oficial de Dathost (partner@dathost.net): comisión de mayo 2026 = 625 EUR, confirmado con el lifetime earnings de 9945 EUR a 1-jun-2026.",
-  "updated": "2026-06-10",
+  "_doc": "Datos publicados que el dashboard fusiona al cargar. Claves de fuente: yt = YouTube AdSense, dh = Dathost Affiliate. Lo actualizan las rutinas mensuales automáticas; los importes son EUR del mes en que se GANARON (el pago de Dathost llega el mes siguiente).",
+  "_fuente_dh": "Informe oficial de Dathost (partner@dathost.net): comisión de mayo 2026 = 625 EUR, confirmado con el lifetime earnings de 9945 EUR a 1-jun-2026.",
+  "_fuente_yt": "YouTube Analytics (estimatedRevenue, vía vidIQ) consultado el 2026-06-11; datos finalizados por mes natural, EUR.",
+  "updated": "2026-06-11",
   "months": {
-    "2025-11": { "dh": 950 },
-    "2025-12": { "dh": 2910 },
-    "2026-01": { "dh": 2360 },
-    "2026-02": { "dh": 1120 },
-    "2026-03": { "dh": 1130 },
-    "2026-04": { "dh": 850 },
-    "2026-05": { "dh": 625 }
+    "2025-08": { "yt": 25.22 },
+    "2025-09": { "yt": 49.64 },
+    "2025-10": { "yt": 84.75 },
+    "2025-11": { "yt": 190.18, "dh": 950 },
+    "2025-12": { "yt": 90.12, "dh": 2910 },
+    "2026-01": { "yt": 38.55, "dh": 2360 },
+    "2026-02": { "yt": 23.69, "dh": 1120 },
+    "2026-03": { "yt": 992.43, "dh": 1130 },
+    "2026-04": { "yt": 1013.24, "dh": 850 },
+    "2026-05": { "yt": 1166.06, "dh": 625 }
   }
 }

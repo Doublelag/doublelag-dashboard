@@ -374,6 +374,14 @@
   </div>
 </div>
 
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Cuota de autónomo y previsión</span>
+    <span class="chart-note">Tabla 2026 (Orden PJC/297/2026) · orientativo, no es asesoramiento fiscal</span>
+  </div>
+  <div id="cuotaPanel"></div>
+</div>
+
 <div class="insight-grid">
   <div class="insight">
     <div class="insight-title"><span class="dot" style="background:var(--accent)"></span>Desglose mensual <span style="color:var(--text3);font-weight:400;font-size:12px">(más reciente arriba)</span></div>
@@ -442,6 +450,14 @@
       <label for="sTaxRate">Hucha fiscal sugerida (%)</label>
       <input type="number" id="sTaxRate" min="0" max="60" step="1">
     </div>
+    <div class="field">
+      <label for="sAltaMonth">Mes de alta como autónomo</label>
+      <input type="month" id="sAltaMonth">
+    </div>
+    <div class="field">
+      <label for="sCuota">Cuota de autónomo actual (€/mes)</label>
+      <input type="number" id="sCuota" min="0" step="0.01">
+    </div>
     <p class="hint">La hucha fiscal es solo un apartado orientativo sobre el neto (ingresos − gastos) para cubrir IRPF / cuota de autónomos. No es asesoramiento fiscal.</p>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('settingsModal')">Cancelar</button>
@@ -489,6 +505,7 @@ function buildSeed() {
     goal: 1500,
     yearGoal: 18000,
     taxRate: 20,
+    fiscal: { altaMonth: '2025-11', cuotaActual: 88 },
     theme: 'dark',
     sources: [
       { id: 'yt', name: 'YouTube AdSense', color: '#ff0000' },
@@ -512,6 +529,7 @@ function migrate(d) {
   if (!d.theme) d.theme = 'dark';
   if (!d.daily) d.daily = { ...ytDaily };
   if (!d.deletedMonths) d.deletedMonths = [];
+  if (!d.fiscal) d.fiscal = { altaMonth: '2025-11', cuotaActual: 88 };
   return d;
 }
 
@@ -983,6 +1001,104 @@ function renderFiscal(all, totalsAll, nowKey) {
   }
   if (lastYear) html += yearRow(lastYear, yb, yg);
   document.getElementById('fiscalTable').innerHTML = html;
+  renderCuota(all, totalsAll, nowKey);
+}
+
+// ============================================================
+// CUOTA DE AUTÓNOMO (tarifa plana + tramos 2026)
+// ============================================================
+// Orden PJC/297/2026 (BOE 31-mar-2026): cuota mensual con MEI 0,9% incluido.
+const TRAMOS_2026 = [
+  { hasta: 670,      cuota: 205.88 },
+  { hasta: 900,      cuota: 226.47 },
+  { hasta: 1166.70,  cuota: 267.64 },
+  { hasta: 1300,     cuota: 299.64 },
+  { hasta: 1500,     cuota: 302.64 },
+  { hasta: 1700,     cuota: 302.64 },
+  { hasta: 1850,     cuota: 319.12 },
+  { hasta: 2030,     cuota: 324.26 },
+  { hasta: 2330,     cuota: 329.41 },
+  { hasta: 2760,     cuota: 349.98 },
+  { hasta: 3190,     cuota: 380.85 },
+  { hasta: 3620,     cuota: 401.43 },
+  { hasta: 4050,     cuota: 432.29 },
+  { hasta: 6000,     cuota: 514.61 },
+  { hasta: Infinity, cuota: 607.31 }
+];
+const SMI_MENSUAL = 1184; // aprox. (SMI 2025 en 12 pagas prorrateadas a 14: 1.184€/mes)
+
+function tramoFor(neto) {
+  for (let i = 0; i < TRAMOS_2026.length; i++) {
+    if (neto <= TRAMOS_2026[i].hasta) return { idx: i + 1, ...TRAMOS_2026[i] };
+  }
+  return { idx: 15, ...TRAMOS_2026[14] };
+}
+
+function addMonths(key, n) {
+  let [y, m] = key.split('-').map(Number);
+  m += n;
+  y += Math.floor((m - 1) / 12);
+  m = ((m - 1) % 12) + 1;
+  return y + '-' + String(m).padStart(2, '0');
+}
+
+function renderCuota(all, totalsAll, nowKey) {
+  const f = DATA.fiscal || {};
+  const cuotaNow = f.cuotaActual ?? 0;
+  const alta = f.altaMonth;
+
+  // rendimiento neto mensual medio (últimos 3 meses completos, antes de cuota SS)
+  const complete = all.filter(k => k < nowKey);
+  const last3 = complete.slice(-3);
+  const netoMedio = last3.length
+    ? last3.reduce((a, k) => a + totalsAll[k] - ((DATA.months[k] || {}).gastos || 0), 0) / last3.length
+    : 0;
+  // Para el tramo, la SS computa el rendimiento neto con deducción del 7% (genérico autónomo individual)
+  const netoComputable = Math.max(0, netoMedio * 0.93);
+  const tramo = tramoFor(netoComputable);
+
+  let planaHtml = '';
+  if (alta && /^\d{4}-\d{2}$/.test(alta)) {
+    const finPlana = addMonths(alta, 12); // primer mes YA fuera de tarifa plana
+    const [fy, fm] = finPlana.split('-').map(Number);
+    const [ny, nm] = nowKey.split('-').map(Number);
+    const mesesRestantes = (fy - ny) * 12 + (fm - nm);
+    const finLabel = monthLabel(addMonths(alta, 11));
+    const salto = tramo.cuota - cuotaNow;
+    if (mesesRestantes > 0) {
+      const prorroga = netoComputable < SMI_MENSUAL;
+      planaHtml = `
+        <div class="insight-row"><span>⏳ Tarifa plana (${fmt(cuotaNow)}/mes)</span>
+          <span class="val">quedan ${mesesRestantes} ${mesesRestantes === 1 ? 'mes' : 'meses'} · hasta ${finLabel}</span></div>
+        <div class="insight-row"><span>📈 Al acabar pasarías al tramo ${tramo.idx}</span>
+          <span class="val" style="color:${salto > 0 ? 'var(--red, #ef4444)' : 'var(--green)'}">${fmt(tramo.cuota)}/mes (${salto >= 0 ? '+' : ''}${fmt(salto)})</span></div>
+        <div class="insight-row"><span>🪜 Prórroga tarifa plana (12 meses más)</span>
+          <span class="val">${prorroga ? 'Posible: neto < SMI (~' + fmt(SMI_MENSUAL) + '/mes)' : 'No aplicable: neto ≥ SMI (~' + fmt(SMI_MENSUAL) + '/mes)'}</span></div>`;
+    } else {
+      planaHtml = `
+        <div class="insight-row"><span>⚠️ Tarifa plana finalizada (${finLabel})</span>
+          <span class="val">cuota por tramos vigente</span></div>
+        <div class="insight-row"><span>📊 Tramo ${tramo.idx} según tu neto medio</span>
+          <span class="val">${fmt(tramo.cuota)}/mes ${Math.abs(tramo.cuota - cuotaNow) > 1 ? '(ajusta tu base en Importass: pagas ' + fmt(cuotaNow) + ')' : ''}</span></div>`;
+    }
+  } else {
+    planaHtml = `<div class="insight-row"><span>Configura tu mes de alta en ⚙ Ajustes</span><span class="val">—</span></div>`;
+  }
+
+  // IRPF modelo 130: 20% del rendimiento neto del año (ingresos − gastos − cuotas SS pagadas)
+  const yearKey = nowKey.split('-')[0];
+  const ytdKeys = all.filter(k => k.startsWith(yearKey));
+  const ytdNeto = ytdKeys.reduce((a, k) => a + totalsAll[k] - ((DATA.months[k] || {}).gastos || 0), 0);
+  const mesesYtd = ytdKeys.length;
+  const ssPagada = cuotaNow * mesesYtd;
+  const irpf = Math.max(0, (ytdNeto - ssPagada) * 0.20);
+
+  document.getElementById('cuotaPanel').innerHTML = `
+    ${planaHtml}
+    <div class="insight-row"><span>💶 Rendimiento neto medio (3 meses, tras 7% gastos genéricos)</span>
+      <span class="val">${fmt(netoComputable)}/mes</span></div>
+    <div class="insight-row"><span>🧾 Reserva IRPF estimada ${yearKey} (mod. 130: 20% del neto − SS)</span>
+      <span class="val" style="color:var(--green)">${fmt(irpf)}</span></div>`;
 }
 
 // ============================================================
@@ -1140,6 +1256,8 @@ function openSettingsModal() {
   document.getElementById('sGoal').value = DATA.goal || 0;
   document.getElementById('sYearGoal').value = DATA.yearGoal || 0;
   document.getElementById('sTaxRate').value = DATA.taxRate || 0;
+  document.getElementById('sAltaMonth').value = (DATA.fiscal || {}).altaMonth || '';
+  document.getElementById('sCuota').value = (DATA.fiscal || {}).cuotaActual ?? '';
   document.getElementById('settingsModal').classList.add('open');
 }
 
@@ -1150,6 +1268,11 @@ function saveSettings() {
   if (!isNaN(g) && g >= 0) DATA.goal = g;
   if (!isNaN(yg) && yg >= 0) DATA.yearGoal = yg;
   if (!isNaN(tr) && tr >= 0 && tr <= 60) DATA.taxRate = tr;
+  if (!DATA.fiscal) DATA.fiscal = {};
+  const alta = document.getElementById('sAltaMonth').value;
+  if (/^\d{4}-\d{2}$/.test(alta)) DATA.fiscal.altaMonth = alta;
+  const cq = parseFloat(document.getElementById('sCuota').value);
+  if (!isNaN(cq) && cq >= 0) DATA.fiscal.cuotaActual = cq;
   persist();
   closeModal('settingsModal');
   render();
